@@ -1,4 +1,4 @@
-package ibminstanaexporter
+package instanaexporter
 
 import (
 	"bytes"
@@ -20,10 +20,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	instanaConfig "github.com/ibm-observability/ibminstanaexporter/config"
-	"github.com/ibm-observability/ibminstanaexporter/internal/converter"
-	"github.com/ibm-observability/ibminstanaexporter/internal/converter/model"
-	"github.com/ibm-observability/ibminstanaexporter/internal/otlptext"
+	instanaConfig "github.com/ibm-observability/instanaexporter/config"
+	"github.com/ibm-observability/instanaexporter/internal/converter"
+	"github.com/ibm-observability/instanaexporter/internal/converter/model"
+	"github.com/ibm-observability/instanaexporter/internal/otlptext"
 
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
 )

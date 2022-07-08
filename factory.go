@@ -1,4 +1,4 @@
-package ibminstanaexporter
+package instanaexporter
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	instanaConfig "github.com/ibm-observability/ibminstanaexporter/config"
+	instanaConfig "github.com/ibm-observability/instanaexporter/config"
 )
 
 const (

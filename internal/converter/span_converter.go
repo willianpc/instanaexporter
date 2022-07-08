@@ -3,8 +3,8 @@ package converter
 import (
 	"fmt"
 
-	"github.com/ibm-observability/ibminstanaexporter/config"
-	"github.com/ibm-observability/ibminstanaexporter/internal/converter/model"
+	"github.com/ibm-observability/instanaexporter/config"
+	"github.com/ibm-observability/instanaexporter/internal/converter/model"
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
