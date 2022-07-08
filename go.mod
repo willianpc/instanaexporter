@@ -1,4 +1,4 @@
-module github.com/ibm-observability/ibminstanaexporter
+module github.com/ibm-observability/instanaexporter
 
 go 1.17
 

@@ -1,4 +1,4 @@
-package ibminstanaexporter
+package instanaexporter
 
 // AttributeInstanaHostID can be used to distinguish multiple hosts' data
 // being processed by a single collector (in a chained scenario)
