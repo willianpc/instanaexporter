@@ -72,11 +72,13 @@ func (e *instanaExporter) pushTraces(ctx context.Context, td pdata.Traces) error
 		resource := resSpan.Resource()
 
 		hostIdAttr, ex := resource.Attributes().Get(instanaConfig.AttributeInstanaHostID)
+		//TODO: Change by hickeyma to drop processor dependency
 		if !ex {
-			return consumererror.NewPermanent(errors.New("No Hostid present. Did you activate the instana_hostid processor?"))
+			//return consumererror.NewPermanent(errors.New("No Hostid present. Did you activate the instana_hostid processor?"))
+		} else {
+			hostId = hostIdAttr.StringVal()
 		}
-
-		hostId = hostIdAttr.StringVal()
+		//hostId = hostIdAttr.StringVal()
 
 		ilSpans := resSpan.InstrumentationLibrarySpans()
 		for j := 0; j < ilSpans.Len(); j++ {
@@ -138,11 +140,13 @@ func (e *instanaExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 		resource := resSpan.Resource()
 
 		hostIdAttr, ex := resource.Attributes().Get(instanaConfig.AttributeInstanaHostID)
+		//TODO: Change by hickeyma yto drop processor dependency
 		if !ex {
-			return consumererror.NewPermanent(errors.New("No Hostid present. Did you activate the instana_hostid processor?"))
+			//return consumererror.NewPermanent(errors.New("No Hostid present. Did you activate the instana_hostid processor?"))
+		} else {
+			hostId = hostIdAttr.StringVal()
 		}
-
-		hostId = hostIdAttr.StringVal()
+		//hostId = hostIdAttr.StringVal()
 
 		ilMetrics := resSpan.InstrumentationLibraryMetrics()
 		for j := 0; j < ilMetrics.Len(); j++ {
