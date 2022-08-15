@@ -6,8 +6,10 @@ import (
 	"github.com/ibm-observability/instanaexporter/internal/converter/model"
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
 	"github.com/instana/go-sensor/docker"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 )
 
 var DockerMetricMap = map[string]string{
@@ -19,7 +21,7 @@ var _ Converter = (*DockerContainerMetricConverter)(nil)
 
 type DockerContainerMetricConverter struct{}
 
-func (c *DockerContainerMetricConverter) AcceptsMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) bool {
+func (c *DockerContainerMetricConverter) AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool {
 	if !containsMetricWithPrefix(metricSlice, "container.") {
 		return false
 	}
@@ -47,7 +49,7 @@ func (c *DockerContainerMetricConverter) AcceptsMetrics(attributes pdata.Attribu
 	return true
 }
 
-func (c *DockerContainerMetricConverter) ConvertMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) []instanaacceptor.PluginPayload {
+func (c *DockerContainerMetricConverter) ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload {
 	containerId, ex := attributes.Get(conventions.AttributeContainerID)
 	if !ex {
 		return make([]instanaacceptor.PluginPayload, 0)
@@ -128,12 +130,12 @@ func (c *DockerContainerMetricConverter) ConvertMetrics(attributes pdata.Attribu
 	}
 }
 
-func (c *DockerContainerMetricConverter) AcceptsSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) bool {
+func (c *DockerContainerMetricConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
 
 	return false
 }
 
-func (c *DockerContainerMetricConverter) ConvertSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) model.Bundle {
+func (c *DockerContainerMetricConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) model.Bundle {
 
 	return model.NewBundle()
 }

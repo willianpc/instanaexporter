@@ -5,7 +5,9 @@ import (
 
 	"github.com/ibm-observability/instanaexporter/internal/converter/model"
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -16,11 +18,11 @@ type ConvertAllConverter struct {
 	logger     *zap.Logger
 }
 
-func (c *ConvertAllConverter) AcceptsMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) bool {
+func (c *ConvertAllConverter) AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool {
 	return true
 }
 
-func (c *ConvertAllConverter) ConvertMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) []instanaacceptor.PluginPayload {
+func (c *ConvertAllConverter) ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload {
 	plugins := make([]instanaacceptor.PluginPayload, 0)
 
 	for i := 0; i < len(c.converters); i++ {
@@ -36,11 +38,11 @@ func (c *ConvertAllConverter) ConvertMetrics(attributes pdata.AttributeMap, metr
 	return plugins
 }
 
-func (c *ConvertAllConverter) AcceptsSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) bool {
+func (c *ConvertAllConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
 	return true
 }
 
-func (c *ConvertAllConverter) ConvertSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) model.Bundle {
+func (c *ConvertAllConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) model.Bundle {
 	bundle := model.NewBundle()
 
 	for i := 0; i < len(c.converters); i++ {

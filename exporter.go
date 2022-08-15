@@ -18,7 +18,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	instanaConfig "github.com/ibm-observability/instanaexporter/config"
 	"github.com/ibm-observability/instanaexporter/internal/converter"
@@ -32,15 +34,15 @@ type instanaExporter struct {
 	config           *instanaConfig.Config
 	client           *http.Client
 	logger           *zap.Logger
-	logsMarshaler    pdata.LogsMarshaler
-	metricsMarshaler pdata.MetricsMarshaler
-	tracesMarshaler  pdata.TracesMarshaler
+	logsMarshaler    plog.Marshaler
+	metricsMarshaler pmetric.Marshaler
+	tracesMarshaler  ptrace.Marshaler
 	settings         component.TelemetrySettings
 	userAgent        string
 }
 
 func (e *instanaExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
+	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -48,7 +50,7 @@ func (e *instanaExporter) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *instanaExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+func (e *instanaExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	e.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 	if !e.logger.Core().Enabled(zapcore.DebugLevel) {
 		return nil
@@ -80,7 +82,7 @@ func (e *instanaExporter) pushTraces(ctx context.Context, td pdata.Traces) error
 		}
 		//hostId = hostIdAttr.StringVal()
 
-		ilSpans := resSpan.InstrumentationLibrarySpans()
+		ilSpans := resSpan.ScopeSpans()
 		for j := 0; j < ilSpans.Len(); j++ {
 			converterBundle := converter.ConvertSpans(resource.Attributes(), ilSpans.At(j).Spans())
 
@@ -117,7 +119,7 @@ func (e *instanaExporter) pushTraces(ctx context.Context, td pdata.Traces) error
 	return e.export(ctx, e.config.AgentEndpoint, headers, req)
 }
 
-func (e *instanaExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (e *instanaExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	e.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !e.logger.Core().Enabled(zapcore.DebugLevel) {
@@ -148,7 +150,7 @@ func (e *instanaExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 		}
 		//hostId = hostIdAttr.StringVal()
 
-		ilMetrics := resSpan.InstrumentationLibraryMetrics()
+		ilMetrics := resSpan.ScopeMetrics()
 		for j := 0; j < ilMetrics.Len(); j++ {
 			converter := converter.NewConvertAllConverter(e.logger)
 
@@ -184,7 +186,7 @@ func (e *instanaExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 	return e.export(ctx, e.config.AgentEndpoint, headers, req)
 }
 
-func (e *instanaExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
+func (e *instanaExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	e.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
 	if !e.logger.Core().Enabled(zapcore.DebugLevel) {

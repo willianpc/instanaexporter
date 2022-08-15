@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestCanDetermineIfAttributeIsSet(t *testing.T) {
-	attrMap := pdata.NewAttributeMap()
+	attrMap := pcommon.NewMap()
 	attrMap.InsertString("foo", "bar")
 	attrMap.InsertString("fizz", "buzz")
 

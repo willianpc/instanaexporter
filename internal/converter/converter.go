@@ -3,13 +3,15 @@ package converter
 import (
 	"github.com/ibm-observability/instanaexporter/internal/converter/model"
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type Converter interface {
-	AcceptsMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) bool
-	ConvertMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) []instanaacceptor.PluginPayload
-	AcceptsSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) bool
-	ConvertSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) model.Bundle
+	AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool
+	ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload
+	AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool
+	ConvertSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) model.Bundle
 	Name() string
 }

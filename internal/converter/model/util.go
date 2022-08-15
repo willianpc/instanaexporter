@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func metricNameToCompact(metricName string, attributes pdata.AttributeMap) string {
+func metricNameToCompact(metricName string, attributes pcommon.Map) string {
 	if attributes.Len() == 0 {
 		return metricName + "{}"
 	}
 
 	var labels = []string{}
-	attributes.Sort().Range(func(key string, value pdata.AttributeValue) bool {
+	attributes.Sort().Range(func(key string, value pcommon.Value) bool {
 		labels = append(labels, fmt.Sprintf("%s=\"%s\"", key, value.AsString()))
 
 		return true
@@ -23,7 +24,7 @@ func metricNameToCompact(metricName string, attributes pdata.AttributeMap) strin
 	return fmt.Sprintf("%s{%s}", metricName, strings.Join(labels, ","))
 }
 
-func convertTraceId(traceId pdata.TraceID) string {
+func convertTraceId(traceId pcommon.TraceID) string {
 	const byteLength = 16
 
 	bytes := traceId.Bytes()
@@ -40,7 +41,7 @@ func convertTraceId(traceId pdata.TraceID) string {
 	return hex.EncodeToString(traceBytes)
 }
 
-func convertSpanId(spanId pdata.SpanID) string {
+func convertSpanId(spanId pcommon.SpanID) string {
 	const byteLength = 8
 
 	bytes := spanId.Bytes()
@@ -57,17 +58,17 @@ func convertSpanId(spanId pdata.SpanID) string {
 	return hex.EncodeToString(spanBytes)
 }
 
-func oTelKindToInstanaKind(otelKind pdata.SpanKind) (string, bool) {
+func oTelKindToInstanaKind(otelKind ptrace.SpanKind) (string, bool) {
 	switch otelKind {
-	case pdata.SpanKindServer:
+	case ptrace.SpanKindServer:
 		return INSTANA_SPAN_KIND_SERVER, true
-	case pdata.SpanKindClient:
+	case ptrace.SpanKindClient:
 		return INSTANA_SPAN_KIND_CLIENT, false
-	case pdata.SpanKindProducer:
+	case ptrace.SpanKindProducer:
 		return INSTANA_SPAN_KIND_PRODUCER, false
-	case pdata.SpanKindConsumer:
+	case ptrace.SpanKindConsumer:
 		return INSTANA_SPAN_KIND_CONSUMER, true
-	case pdata.SpanKindInternal:
+	case ptrace.SpanKindInternal:
 		return INSTANA_SPAN_KIND_INTERNAL, false
 	default:
 		return "unknown", false

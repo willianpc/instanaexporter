@@ -1,29 +1,27 @@
 package otlptext
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/ptrace"
 
 // NewTextTracesMarshaler returns a serializer.TracesMarshaler to encode to OTLP text bytes.
-func NewTextTracesMarshaler() pdata.TracesMarshaler {
+func NewTextTracesMarshaler() ptrace.Marshaler {
 	return textTracesMarshaler{}
 }
 
 type textTracesMarshaler struct{}
 
 // MarshalTraces pdata.Traces to OTLP text.
-func (textTracesMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
+func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 	buf := dataBuffer{}
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		buf.logEntry("ResourceSpans #%d", i)
 		rs := rss.At(i)
 		buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			buf.logEntry("InstrumentationLibrarySpans #%d", j)
 			ils := ilss.At(j)
-			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
+			buf.logInstrumentationLibrary(ils.Scope())
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {

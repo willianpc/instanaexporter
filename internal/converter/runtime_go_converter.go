@@ -3,21 +3,23 @@ package converter
 import (
 	"github.com/ibm-observability/instanaexporter/internal/converter/model"
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 )
 
 var _ Converter = (*RuntimeGoConverter)(nil)
 
 type RuntimeGoConverter struct{}
 
-func (c *RuntimeGoConverter) AcceptsMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) bool {
+func (c *RuntimeGoConverter) AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool {
 	runtimeAttr, ex := attributes.Get(conventions.AttributeTelemetrySDKLanguage)
 
 	return ex && runtimeAttr.AsString() == conventions.AttributeTelemetrySDKLanguageGo
 }
 
-func (c *RuntimeGoConverter) ConvertMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) []instanaacceptor.PluginPayload {
+func (c *RuntimeGoConverter) ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload {
 	processPidAttr, ex := attributes.Get(conventions.AttributeProcessPID)
 	if !ex {
 		return make([]instanaacceptor.PluginPayload, 0)
@@ -30,14 +32,14 @@ func (c *RuntimeGoConverter) ConvertMetrics(attributes pdata.AttributeMap, metri
 	}
 }
 
-func (c *RuntimeGoConverter) AcceptsSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) bool {
+func (c *RuntimeGoConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
 
 	runtimeAttr, ex := attributes.Get(conventions.AttributeTelemetrySDKLanguage)
 
 	return ex && runtimeAttr.AsString() == conventions.AttributeTelemetrySDKLanguageGo
 }
 
-func (c *RuntimeGoConverter) ConvertSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) model.Bundle {
+func (c *RuntimeGoConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) model.Bundle {
 	bundle := model.NewBundle()
 	processPidAttr, ex := attributes.Get(conventions.AttributeProcessPID)
 	if !ex {
@@ -55,7 +57,7 @@ func (c *RuntimeGoConverter) Name() string {
 	return "RuntimeGoConverter"
 }
 
-func createGoSnapshot(attributes pdata.AttributeMap, processPid int) instanaacceptor.GoProcessData {
+func createGoSnapshot(attributes pcommon.Map, processPid int) instanaacceptor.GoProcessData {
 	runtimeInfo := instanaacceptor.RuntimeInfo{}
 
 	processNameAttr, ex := attributes.Get(conventions.AttributeProcessExecutableName)

@@ -17,14 +17,16 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "instana"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
 	)
 }
 

@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type dataBuffer struct {
@@ -22,26 +24,26 @@ func (b *dataBuffer) logAttr(label string, value string) {
 	b.logEntry("    %-15s: %s", label, value)
 }
 
-func (b *dataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
+func (b *dataBuffer) logAttributeMap(label string, am pcommon.Map) {
 	if am.Len() == 0 {
 		return
 	}
 
 	b.logEntry("%s:", label)
-	am.Range(func(k string, v pdata.AttributeValue) bool {
+	am.Range(func(k string, v pcommon.Value) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 		return true
 	})
 }
 
-func (b *dataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrary) {
+func (b *dataBuffer) logInstrumentationLibrary(il pcommon.InstrumentationScope) {
 	b.logEntry(
 		"InstrumentationLibrary %s %s",
 		il.Name(),
 		il.Version())
 }
 
-func (b *dataBuffer) logMetricDescriptor(md pdata.Metric) {
+func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
 	b.logEntry("Descriptor:")
 	b.logEntry("     -> Name: %s", md.Name())
 	b.logEntry("     -> Description: %s", md.Description())
@@ -49,28 +51,28 @@ func (b *dataBuffer) logMetricDescriptor(md pdata.Metric) {
 	b.logEntry("     -> DataType: %s", md.DataType().String())
 }
 
-func (b *dataBuffer) logMetricDataPoints(m pdata.Metric) {
+func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
 	switch m.DataType() {
-	case pdata.MetricDataTypeNone:
+	case pmetric.MetricDataTypeNone:
 		return
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		b.logNumberDataPoints(m.Gauge().DataPoints())
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		data := m.Sum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logNumberDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		data := m.Summary()
 		b.logDoubleSummaryDataPoints(data.DataPoints())
 	}
 }
 
-func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
+func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("NumberDataPoints #%d", i)
@@ -79,15 +81,15 @@ func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		switch p.ValueType() {
-		case pdata.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			b.logEntry("Value: %d", p.IntVal())
-		case pdata.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			b.logEntry("Value: %f", p.DoubleVal())
 		}
 	}
 }
 
-func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
+func (b *dataBuffer) logDoubleHistogramDataPoints(ps pmetric.HistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
@@ -99,22 +101,18 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 		b.logEntry("Sum: %f", p.Sum())
 
 		bounds := p.ExplicitBounds()
-		if len(bounds) != 0 {
-			for i, bound := range bounds {
-				b.logEntry("ExplicitBounds #%d: %f", i, bound)
-			}
+		for i := 0; i < bounds.Len(); i++ {
+			b.logEntry("ExplicitBounds #%d: %f", i, bounds.At(i))
 		}
 
 		buckets := p.BucketCounts()
-		if len(buckets) != 0 {
-			for j, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", j, bucket)
-			}
+		for j := 0; j < buckets.Len(); j++ {
+			b.logEntry("Buckets #%d, Count: %d", j, buckets.At(i))
 		}
 	}
 }
 
-func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
+func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("SummaryDataPoints #%d", i)
@@ -133,11 +131,11 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	}
 }
 
-func (b *dataBuffer) logDataPointAttributes(labels pdata.AttributeMap) {
+func (b *dataBuffer) logDataPointAttributes(labels pcommon.Map) {
 	b.logAttributeMap("Data point attributes", labels)
 }
 
-func (b *dataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
+func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
 	if se.Len() == 0 {
 		return
 	}
@@ -154,14 +152,14 @@ func (b *dataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		e.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		e.Attributes().Range(func(k string, v pcommon.Value) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 			return true
 		})
 	}
 }
 
-func (b *dataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
+func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 	if sl.Len() == 0 {
 		return
 	}
@@ -179,33 +177,33 @@ func (b *dataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		l.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		l.Attributes().Range(func(k string, v pcommon.Value) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 			return true
 		})
 	}
 }
 
-func attributeValueToString(av pdata.AttributeValue) string {
+func attributeValueToString(av pcommon.Value) string {
 	switch av.Type() {
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		return av.StringVal()
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return strconv.FormatBool(av.BoolVal())
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return strconv.FormatInt(av.IntVal(), 10)
-	case pdata.AttributeValueTypeArray:
+	case pcommon.ValueTypeSlice:
 		return attributeValueArrayToString(av.SliceVal())
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeMap:
 		return attributeMapToString(av.MapVal())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
 	}
 }
 
-func attributeValueArrayToString(av pdata.AttributeValueSlice) string {
+func attributeValueArrayToString(av pcommon.Slice) string {
 	var b strings.Builder
 	b.WriteByte('[')
 	for i := 0; i < av.Len(); i++ {
@@ -220,11 +218,11 @@ func attributeValueArrayToString(av pdata.AttributeValueSlice) string {
 	return b.String()
 }
 
-func attributeMapToString(av pdata.AttributeMap) string {
+func attributeMapToString(av pcommon.Map) string {
 	var b strings.Builder
 	b.WriteString("{\n")
 
-	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
+	av.Sort().Range(func(k string, v pcommon.Value) bool {
 		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), v.AsString())
 		return true
 	})

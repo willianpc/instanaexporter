@@ -3,10 +3,11 @@ package converter
 import (
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func containsMetricWithPrefix(metricSlice pdata.MetricSlice, prefix string) bool {
+func containsMetricWithPrefix(metricSlice pmetric.MetricSlice, prefix string) bool {
 	for i := 0; i < metricSlice.Len(); i++ {
 		metric := metricSlice.At(i)
 
@@ -18,7 +19,7 @@ func containsMetricWithPrefix(metricSlice pdata.MetricSlice, prefix string) bool
 	return false
 }
 
-func containsAttributes(attributeMap pdata.AttributeMap, attributes ...string) bool {
+func containsAttributes(attributeMap pcommon.Map, attributes ...string) bool {
 	for i := 0; i < len(attributes); i++ {
 		_, ex := attributeMap.Get(attributes[i])
 
