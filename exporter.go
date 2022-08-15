@@ -253,16 +253,17 @@ func (e *instanaExporter) export(ctx context.Context, url string, header map[str
 	return nil
 }
 
-func newTracesExporter(config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func newTracesExporter(ctx context.Context, config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s, err := newInstanaExporter(logger, cfg, set)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		config,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
@@ -275,15 +276,16 @@ func newTracesExporter(config config.Exporter, cfg *instanaConfig.Config, logger
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+func newMetricsExporter(ctx context.Context, config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
 	s, err := newInstanaExporter(logger, cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
-		config,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		config,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
@@ -296,16 +298,17 @@ func newMetricsExporter(config config.Exporter, cfg *instanaConfig.Config, logge
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newLogsExporter(ctx context.Context, config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
 	s, err := newInstanaExporter(logger, cfg, set)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
-		config,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		config,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),

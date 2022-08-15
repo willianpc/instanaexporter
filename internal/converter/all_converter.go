@@ -84,7 +84,7 @@ func NewConvertAllConverter(logger *zap.Logger) Converter {
 			&RuntimeJavaConverter{},
 			&RuntimePythonConverter{},
 
-			&SpanConverter{},
+			&SpanConverter{logger: logger},
 		},
 		logger: logger,
 	}

@@ -42,11 +42,7 @@ func (c *DockerContainerMetricConverter) AcceptsMetrics(attributes pcommon.Map, 
 	}
 
 	_, ex = attributes.Get(conventions.AttributeContainerName)
-	if !ex {
-		return false
-	}
-
-	return true
+	return ex
 }
 
 func (c *DockerContainerMetricConverter) ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload {

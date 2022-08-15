@@ -27,6 +27,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTracesExporter, stability),
 		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -44,7 +45,7 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*instanaConfig.Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -52,10 +53,10 @@ func createTracesExporter(_ context.Context, set component.ExporterCreateSetting
 		return nil, err
 	}
 
-	return newTracesExporter(config, cfg, exporterLogger, set)
+	return newTracesExporter(ctx, config, cfg, exporterLogger, set)
 }
 
-func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*instanaConfig.Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -63,7 +64,18 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, err
 	}
 
-	return newMetricsExporter(config, cfg, exporterLogger, set)
+	return newMetricsExporter(ctx, config, cfg, exporterLogger, set)
+}
+
+func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+	cfg := config.(*instanaConfig.Config)
+
+	exporterLogger, err := createLogger(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return newLogsExporter(ctx, config, cfg, exporterLogger, set)
 }
 
 func createLogger(cfg *instanaConfig.Config) (*zap.Logger, error) {
