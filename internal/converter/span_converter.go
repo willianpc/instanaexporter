@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -18,7 +20,9 @@ const (
 
 var _ Converter = (*SpanConverter)(nil)
 
-type SpanConverter struct{}
+type SpanConverter struct {
+	logger *zap.Logger
+}
 
 func (c *SpanConverter) AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool {
 	return false
@@ -64,7 +68,7 @@ func (c *SpanConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.Sp
 
 		instanaSpan, err := model.ConvertPDataSpanToInstanaSpan(fromS, otelSpan, serviceName, attributes)
 		if err != nil {
-			fmt.Errorf(err.Error())
+			c.logger.Debug(fmt.Sprintf("Error converting Open Telemetry span to Instana span: %s", err.Error()))
 			continue
 		}
 
