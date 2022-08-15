@@ -6,19 +6,21 @@ import (
 
 	"github.com/ibm-observability/instanaexporter/internal/converter/model"
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var _ Converter = (*CollectorMetricsConverter)(nil)
 
 type CollectorMetricsConverter struct{}
 
-func (c *CollectorMetricsConverter) AcceptsMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) bool {
+func (c *CollectorMetricsConverter) AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool {
 
 	return containsMetricWithPrefix(metricSlice, "otelcol_")
 }
 
-func (c *CollectorMetricsConverter) ConvertMetrics(attributes pdata.AttributeMap, metricSlice pdata.MetricSlice) []instanaacceptor.PluginPayload {
+func (c *CollectorMetricsConverter) ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload {
 	pid := os.Getpid()
 
 	collectorProcessPlugin := instanaacceptor.NewProcessPluginPayload(strconv.Itoa(pid), instanaacceptor.ProcessData{
@@ -52,12 +54,12 @@ func (c *CollectorMetricsConverter) ConvertMetrics(attributes pdata.AttributeMap
 	}
 }
 
-func (c *CollectorMetricsConverter) AcceptsSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) bool {
+func (c *CollectorMetricsConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
 
 	return false
 }
 
-func (c *CollectorMetricsConverter) ConvertSpans(attributes pdata.AttributeMap, spanSlice pdata.SpanSlice) model.Bundle {
+func (c *CollectorMetricsConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) model.Bundle {
 
 	return model.NewBundle()
 }

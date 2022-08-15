@@ -1,18 +1,18 @@
 package otlptext // import "go.opentelemetry.io/collector/internal/otlptext"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // NewTextMetricsMarshaler returns a serializer.MetricsMarshaler to encode to OTLP text bytes.
-func NewTextMetricsMarshaler() pdata.MetricsMarshaler {
+func NewTextMetricsMarshaler() pmetric.Marshaler {
 	return textMetricsMarshaler{}
 }
 
 type textMetricsMarshaler struct{}
 
 // MarshalMetrics pdata.Metrics to OTLP text.
-func (textMetricsMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
+func (textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
 	buf := dataBuffer{}
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -20,12 +20,12 @@ func (textMetricsMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
 		rm := rms.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rm.SchemaUrl())
 		buf.logAttributeMap("Resource attributes", rm.Resource().Attributes())
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
 			ilm := ilms.At(j)
 			buf.logEntry("InstrumentationLibraryMetrics SchemaURL: %s", ilm.SchemaUrl())
-			buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
+			buf.logInstrumentationLibrary(ilm.Scope())
 			metrics := ilm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				buf.logEntry("Metric #%d", k)

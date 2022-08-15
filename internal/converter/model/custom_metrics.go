@@ -2,7 +2,7 @@ package model
 
 import (
 	instanaacceptor "github.com/instana/go-sensor/acceptor"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type metricsInner struct {
@@ -30,35 +30,35 @@ func NewOpenTelemetryCustomMetricsData() OpenTelemetryCustomMetricsData {
 	}
 }
 
-func (omData *OpenTelemetryCustomMetricsData) AppendMetric(metric pdata.Metric) {
+func (omData *OpenTelemetryCustomMetricsData) AppendMetric(metric pmetric.Metric) {
 	metricName := metric.Name()
 
 	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		for j := 0; j < metric.Gauge().DataPoints().Len(); j++ {
 			dp := metric.Gauge().DataPoints().At(j)
 
-			if dp.ValueType() == pdata.MetricValueTypeDouble {
+			if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
 				omData.Metrics.Gauges[metricNameToCompact(metricName, dp.Attributes())] = dp.DoubleVal()
 			}
 
-			if dp.ValueType() == pdata.MetricValueTypeInt {
+			if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
 				omData.Metrics.Gauges[metricNameToCompact(metricName, dp.Attributes())] = float64(dp.IntVal())
 			}
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		for j := 0; j < metric.Sum().DataPoints().Len(); j++ {
 			dp := metric.Sum().DataPoints().At(j)
 
-			if dp.ValueType() == pdata.MetricValueTypeDouble {
+			if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
 				omData.Metrics.Sums[metricNameToCompact(metricName, dp.Attributes())] = dp.DoubleVal()
 			}
 
-			if dp.ValueType() == pdata.MetricValueTypeInt {
+			if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
 				omData.Metrics.Sums[metricNameToCompact(metricName, dp.Attributes())] = float64(dp.IntVal())
 			}
 		}
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		for j := 0; j < metric.Histogram().DataPoints().Len(); j++ {
 			dp := metric.Histogram().DataPoints().At(j)
 

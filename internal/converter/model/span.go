@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
@@ -69,7 +70,7 @@ type Span struct {
 	Data            OTelSpanData    `json:"data,omitempty"`
 }
 
-func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan pdata.Span, serviceName string, attributes pdata.AttributeMap) (Span, error) {
+func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan ptrace.Span, serviceName string, attributes pcommon.Map) (Span, error) {
 	traceId := convertTraceId(otelSpan.TraceID())
 
 	instanaSpan := Span{
@@ -107,18 +108,18 @@ func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan pdata.Span, serviceName
 
 	instanaSpan.Data.Operation = otelSpan.Name()
 
-	if otelSpan.TraceState() != pdata.TraceStateEmpty {
+	if otelSpan.TraceState() != ptrace.TraceStateEmpty {
 		instanaSpan.Data.TraceState = string(otelSpan.TraceState())
 	}
 
-	otelSpan.Attributes().Sort().Range(func(k string, v pdata.AttributeValue) bool {
+	otelSpan.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
 		instanaSpan.Data.Tags[k] = v.AsString()
 
 		return true
 	})
 
 	errornous := false
-	if otelSpan.Status().Code() == pdata.StatusCodeError {
+	if otelSpan.Status().Code() == ptrace.StatusCodeError {
 		errornous = true
 		instanaSpan.Data.Tags[INSTANA_DATA_ERROR] = otelSpan.Status().Code().String()
 		instanaSpan.Data.Tags[INSTANA_DATA_ERROR_DETAIL] = otelSpan.Status().Message()
