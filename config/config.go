@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"strings"
 
 	"go.uber.org/zap/zapcore"
 
@@ -19,11 +20,11 @@ const (
 	HeaderTime = "x-instana-time"
 )
 
-// Config defines configuration for logging exporter.
+// Config defines configuration for the Instana exporter
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	AgentEndpoint string `mapstructure:"agent_endpoint"`
+	Endpoint string `mapstructure:"agent_endpoint"`
 
 	AgentKey string `mapstructure:"agent_key"`
 
@@ -40,16 +41,20 @@ var _ config.Exporter = (*Config)(nil)
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 
-	if cfg.AgentEndpoint == "" {
-		return errors.New("no Instana Agent Endpoint set")
+	if cfg.Endpoint == "" {
+		return errors.New("no Instana endpoint set")
 	}
 
 	if cfg.AgentKey == "" {
-		return errors.New("no Instana Agent key set")
+		return errors.New("no Instana agent key set")
 	}
 
 	if cfg.CustomZone == "" {
-		return errors.New("no zone set")
+		return errors.New("no Instana zone set")
+	}
+
+	if !(strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://")) {
+		return errors.New("endpoint must start with http:// or https://")
 	}
 
 	return nil

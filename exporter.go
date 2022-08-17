@@ -15,9 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -50,7 +48,7 @@ func (e *instanaExporter) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *instanaExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Traces) error {
 	e.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 	if !e.logger.Core().Enabled(zapcore.DebugLevel) {
 		return nil
@@ -74,13 +72,9 @@ func (e *instanaExporter) pushTraces(ctx context.Context, td ptrace.Traces) erro
 		resource := resSpan.Resource()
 
 		hostIdAttr, ex := resource.Attributes().Get(instanaConfig.AttributeInstanaHostID)
-		//TODO: Change by hickeyma to drop processor dependency
-		if !ex {
-			//return consumererror.NewPermanent(errors.New("No Hostid present. Did you activate the instana_hostid processor?"))
-		} else {
+		if ex {
 			hostId = hostIdAttr.StringVal()
 		}
-		//hostId = hostIdAttr.StringVal()
 
 		ilSpans := resSpan.ScopeSpans()
 		for j := 0; j < ilSpans.Len(); j++ {
@@ -95,7 +89,6 @@ func (e *instanaExporter) pushTraces(ctx context.Context, td ptrace.Traces) erro
 
 	if len(bundle.Spans) <= 0 {
 		// skip exporting, nothing to do
-
 		return nil
 	}
 
@@ -116,10 +109,10 @@ func (e *instanaExporter) pushTraces(ctx context.Context, td ptrace.Traces) erro
 		instanaConfig.HeaderTime: "0",
 	}
 
-	return e.export(ctx, e.config.AgentEndpoint, headers, req)
+	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func (e *instanaExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *instanaExporter) pushConvertedMetrics(ctx context.Context, md pmetric.Metrics) error {
 	e.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !e.logger.Core().Enabled(zapcore.DebugLevel) {
@@ -142,13 +135,9 @@ func (e *instanaExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 		resource := resSpan.Resource()
 
 		hostIdAttr, ex := resource.Attributes().Get(instanaConfig.AttributeInstanaHostID)
-		//TODO: Change by hickeyma yto drop processor dependency
-		if !ex {
-			//return consumererror.NewPermanent(errors.New("No Hostid present. Did you activate the instana_hostid processor?"))
-		} else {
+		if ex {
 			hostId = hostIdAttr.StringVal()
 		}
-		//hostId = hostIdAttr.StringVal()
 
 		ilMetrics := resSpan.ScopeMetrics()
 		for j := 0; j < ilMetrics.Len(); j++ {
@@ -162,7 +151,6 @@ func (e *instanaExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 
 	if len(bundle.Metrics.Plugins) <= 0 {
 		// skip exporting, nothing to do
-
 		return nil
 	}
 
@@ -183,10 +171,10 @@ func (e *instanaExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 		instanaConfig.HeaderTime: "0",
 	}
 
-	return e.export(ctx, e.config.AgentEndpoint, headers, req)
+	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func (e *instanaExporter) pushLogs(_ context.Context, ld plog.Logs) error {
+func (e *instanaExporter) pushConvertedLogs(_ context.Context, ld plog.Logs) error {
 	e.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
 	if !e.logger.Core().Enabled(zapcore.DebugLevel) {
@@ -204,8 +192,8 @@ func (e *instanaExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 func newInstanaExporter(logger *zap.Logger, cfg config.Exporter, set component.ExporterCreateSettings) (*instanaExporter, error) {
 	iCfg := cfg.(*instanaConfig.Config)
 
-	if iCfg.AgentEndpoint != "" {
-		_, err := url.Parse(iCfg.AgentEndpoint)
+	if iCfg.Endpoint != "" {
+		_, err := url.Parse(iCfg.Endpoint)
 		if err != nil {
 			return nil, errors.New("endpoint must be a valid URL")
 		}
@@ -251,70 +239,4 @@ func (e *instanaExporter) export(ctx context.Context, url string, header map[str
 	}
 
 	return nil
-}
-
-func newTracesExporter(ctx context.Context, config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s, err := newInstanaExporter(logger, cfg, set)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return exporterhelper.NewTracesExporterWithContext(
-		ctx,
-		set,
-		config,
-		s.pushTraces,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithStart(s.start),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-	)
-}
-
-// newMetricsExporter creates an exporter.MetricsExporter that just drops the
-// received data and logs debugging messages.
-func newMetricsExporter(ctx context.Context, config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	s, err := newInstanaExporter(logger, cfg, set)
-	if err != nil {
-		return nil, err
-	}
-
-	return exporterhelper.NewMetricsExporterWithContext(
-		ctx,
-		set,
-		config,
-		s.pushMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithStart(s.start),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-	)
-}
-
-// newLogsExporter creates an exporter.LogsExporter that just drops the
-// received data and logs debugging messages.
-func newLogsExporter(ctx context.Context, config config.Exporter, cfg *instanaConfig.Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
-	s, err := newInstanaExporter(logger, cfg, set)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return exporterhelper.NewLogsExporterWithContext(
-		ctx,
-		set,
-		config,
-		s.pushLogs,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithStart(s.start),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-	)
 }
