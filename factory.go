@@ -30,7 +30,6 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTracesExporter, stability),
 		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -106,41 +105,6 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 		set,
 		config,
 		instanaExporter.pushConvertedMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithStart(instanaExporter.start),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(func(context.Context) error {
-			cancel()
-			return nil
-		}),
-	)
-}
-
-// createLogsExporter creates a logs exporter based on this configuration
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
-	cfg := config.(*instanaConfig.Config)
-
-	exporterLogger, err := createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
-
-	instanaExporter, err := newInstanaExporter(exporterLogger, cfg, set)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-
-	return exporterhelper.NewLogsExporterWithContext(
-		ctx,
-		set,
-		config,
-		instanaExporter.pushConvertedLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(instanaExporter.start),
 		// Disable Timeout/RetryOnFailure and SendingQueue

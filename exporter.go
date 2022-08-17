@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -32,7 +31,6 @@ type instanaExporter struct {
 	config           *instanaConfig.Config
 	client           *http.Client
 	logger           *zap.Logger
-	logsMarshaler    plog.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	tracesMarshaler  ptrace.Marshaler
 	settings         component.TelemetrySettings
@@ -174,21 +172,6 @@ func (e *instanaExporter) pushConvertedMetrics(ctx context.Context, md pmetric.M
 	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func (e *instanaExporter) pushConvertedLogs(_ context.Context, ld plog.Logs) error {
-	e.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
-
-	if !e.logger.Core().Enabled(zapcore.DebugLevel) {
-		return nil
-	}
-
-	buf, err := e.logsMarshaler.MarshalLogs(ld)
-	if err != nil {
-		return err
-	}
-	e.logger.Debug(string(buf))
-	return nil
-}
-
 func newInstanaExporter(logger *zap.Logger, cfg config.Exporter, set component.ExporterCreateSettings) (*instanaExporter, error) {
 	iCfg := cfg.(*instanaConfig.Config)
 
@@ -204,7 +187,6 @@ func newInstanaExporter(logger *zap.Logger, cfg config.Exporter, set component.E
 	return &instanaExporter{
 		config:           iCfg,
 		logger:           logger,
-		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
 		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
 		userAgent:        userAgent,
