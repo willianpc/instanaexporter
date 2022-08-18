@@ -17,7 +17,7 @@ The following exporter configuration parameters are supported.
 
 | Parameter      | Description |
 |----------------|-------------|
-| agent_endpoint | The Instana backend endpoint that the Exporter connects to. It depends on your region and it starts with ``https://serverless-``. It corresponds to the Instana environment variable ``INSTANA_ENDPOINT_URL`` |
+| endpoint | The Instana backend endpoint that the Exporter connects to. It depends on your region and it starts with ``https://serverless-``. It corresponds to the Instana environment variable ``INSTANA_ENDPOINT_URL`` |
 | agent_key      | Your Instana Agent key. The same agent key can be used for host agents and serverless monitoring. It corresponds to the Instana environment variable ``INSTANA_AGENT_KEY`` |
 | zone           | The zone to place this monitored component into. It corresponds to the Instana environment variable ``INSTANA_ZONE`` |
 
