@@ -24,7 +24,7 @@ const (
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	Endpoint string `mapstructure:"agent_endpoint"`
+	Endpoint string `mapstructure:"endpoint"`
 
 	AgentKey string `mapstructure:"agent_key"`
 
