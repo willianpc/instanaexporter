@@ -4,11 +4,9 @@
 | ------------------------ |------------------|
 | Stability                | [beta]           |
 | Supported pipeline types | traces           |
-| Distributions            | [contrib], [AWS] |
+| Distributions            | [contrib]        |
 
-The Instana Exporter takes the role of the Instana Agent at exporting observability signals to the Instana platform.
-
-It converts OpenTelemetry log, metric and trace data to and then sends to the Instana Backend.
+The Instana Exporter converts OpenTelemetry trace data and then sends to the [Instana Backend](https://www.ibm.com/docs/en/instana-observability/current?topic=setting-up-managing-instana).
 
 ## Exporter Configuration
 
@@ -32,16 +30,15 @@ The code snippet below shows how your configuration file should look like:
 
 exporters:
   instana:
-    agent_endpoint: ${INSTANA_ENDPOINT_URL}
+    endpoint: ${INSTANA_ENDPOINT_URL}
     agent_key: ${INSTANA_AGENT_KEY}
-    zone: ${INSTANA_ZONE}
 
 [...]
 
 service:
   pipelines:
     traces:
-      exporters: [logging, instana]
+      exporters: [instana]
 
 [...]
 ```
@@ -62,23 +59,16 @@ exporters:
     loglevel: debug
   instana:
     loglevel: debug
-    agent_endpoint: ${INSTANA_ENDPOINT_URL}
+    endpoint: ${INSTANA_ENDPOINT_URL}
     agent_key: ${INSTANA_AGENT_KEY}
-    zone: ${INSTANA_ZONE}
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, instana]
-    metrics:
-      receivers: [otlp]
-      processors: [ batch]
-      exporters: [logging]
+      exporters: [instana]
 ```
-
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-[AWS]:https://aws-otel.github.io/docs/partners/dynatrace
