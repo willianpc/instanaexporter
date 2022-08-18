@@ -5,9 +5,7 @@ import (
 
 	"github.com/ibm-observability/instanaexporter/config"
 	"github.com/ibm-observability/instanaexporter/internal/converter/model"
-	instanaacceptor "github.com/instana/go-sensor/acceptor"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 
@@ -22,14 +20,6 @@ var _ Converter = (*SpanConverter)(nil)
 
 type SpanConverter struct {
 	logger *zap.Logger
-}
-
-func (c *SpanConverter) AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool {
-	return false
-}
-
-func (c *SpanConverter) ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload {
-	return make([]instanaacceptor.PluginPayload, 0)
 }
 
 func (c *SpanConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {

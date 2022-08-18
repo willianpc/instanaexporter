@@ -7,15 +7,11 @@ import (
 )
 
 type Bundle struct {
-	Metrics PluginContainer `json:"metrics,omitempty"`
-	Spans   []Span          `json:"spans,omitempty"`
+	Spans []Span `json:"spans,omitempty"`
 }
 
 func NewBundle() Bundle {
 	return Bundle{
-		Metrics: PluginContainer{
-			Plugins: make([]instanaacceptor.PluginPayload, 0),
-		},
 		Spans: make([]Span, 0),
 	}
 }

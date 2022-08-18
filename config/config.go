@@ -28,8 +28,6 @@ type Config struct {
 
 	AgentKey string `mapstructure:"agent_key"`
 
-	CustomZone string `mapstructure:"zone"`
-
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
@@ -47,10 +45,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.AgentKey == "" {
 		return errors.New("no Instana agent key set")
-	}
-
-	if cfg.CustomZone == "" {
-		return errors.New("no Instana zone set")
 	}
 
 	if !(strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://")) {

@@ -16,25 +16,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	instanaConfig "github.com/ibm-observability/instanaexporter/config"
 	"github.com/ibm-observability/instanaexporter/internal/converter"
 	"github.com/ibm-observability/instanaexporter/internal/converter/model"
 	"github.com/ibm-observability/instanaexporter/internal/otlptext"
-
-	instanaacceptor "github.com/instana/go-sensor/acceptor"
 )
 
 type instanaExporter struct {
-	config           *instanaConfig.Config
-	client           *http.Client
-	logger           *zap.Logger
-	metricsMarshaler pmetric.Marshaler
-	tracesMarshaler  ptrace.Marshaler
-	settings         component.TelemetrySettings
-	userAgent        string
+	config          *instanaConfig.Config
+	client          *http.Client
+	logger          *zap.Logger
+	tracesMarshaler ptrace.Marshaler
+	settings        component.TelemetrySettings
+	userAgent       string
 }
 
 func (e *instanaExporter) start(_ context.Context, host component.Host) error {
@@ -59,7 +55,6 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	e.logger.Debug(string(buf))
 
 	converter := converter.NewConvertAllConverter(e.logger)
-	plugins := make([]instanaacceptor.PluginPayload, 0)
 	spans := make([]model.Span, 0)
 
 	hostId := ""
@@ -79,81 +74,15 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 			converterBundle := converter.ConvertSpans(resource.Attributes(), ilSpans.At(j).Spans())
 
 			spans = append(spans, converterBundle.Spans...)
-			plugins = append(plugins, converterBundle.Metrics.Plugins...)
 		}
 	}
 
-	bundle := model.Bundle{Metrics: model.PluginContainer{Plugins: plugins}, Spans: spans}
+	bundle := model.Bundle{Spans: spans}
 
 	if len(bundle.Spans) <= 0 {
 		// skip exporting, nothing to do
 		return nil
 	}
-
-	// Wrap payload with Zone
-	bundle.Metrics.Plugins = append(bundle.Metrics.Plugins, model.NewGenericZone(e.config.CustomZone))
-
-	req, err := bundle.Marshal()
-
-	e.logger.Debug(string(req))
-
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-
-	headers := map[string]string{
-		instanaConfig.HeaderKey:  e.config.AgentKey,
-		instanaConfig.HeaderHost: hostId,
-		instanaConfig.HeaderTime: "0",
-	}
-
-	return e.export(ctx, e.config.Endpoint, headers, req)
-}
-
-func (e *instanaExporter) pushConvertedMetrics(ctx context.Context, md pmetric.Metrics) error {
-	e.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
-
-	if !e.logger.Core().Enabled(zapcore.DebugLevel) {
-		return nil
-	}
-
-	buf, err := e.metricsMarshaler.MarshalMetrics(md)
-	if err != nil {
-		return err
-	}
-	e.logger.Debug(string(buf))
-
-	plugins := make([]instanaacceptor.PluginPayload, 0)
-
-	hostId := ""
-	resourceMetrics := md.ResourceMetrics()
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		resSpan := resourceMetrics.At(i)
-
-		resource := resSpan.Resource()
-
-		hostIdAttr, ex := resource.Attributes().Get(instanaConfig.AttributeInstanaHostID)
-		if ex {
-			hostId = hostIdAttr.StringVal()
-		}
-
-		ilMetrics := resSpan.ScopeMetrics()
-		for j := 0; j < ilMetrics.Len(); j++ {
-			converter := converter.NewConvertAllConverter(e.logger)
-
-			plugins = append(plugins, converter.ConvertMetrics(resource.Attributes(), ilMetrics.At(j).Metrics())...)
-		}
-	}
-
-	bundle := model.Bundle{Metrics: model.PluginContainer{Plugins: plugins}}
-
-	if len(bundle.Metrics.Plugins) <= 0 {
-		// skip exporting, nothing to do
-		return nil
-	}
-
-	// Wrap payload with Zone
-	bundle.Metrics.Plugins = append(bundle.Metrics.Plugins, model.NewGenericZone(e.config.CustomZone))
 
 	req, err := bundle.Marshal()
 
@@ -185,11 +114,10 @@ func newInstanaExporter(logger *zap.Logger, cfg config.Exporter, set component.E
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
 	return &instanaExporter{
-		config:           iCfg,
-		logger:           logger,
-		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
-		userAgent:        userAgent,
+		config:          iCfg,
+		logger:          logger,
+		tracesMarshaler: otlptext.NewTextTracesMarshaler(),
+		userAgent:       userAgent,
 	}, nil
 }
 
