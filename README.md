@@ -8,24 +8,18 @@
 
 The Instana Exporter takes the role of the Instana Agent at exporting observability signals to the Instana platform.
 
-The Instana Agent is already able to receive otlp spans, converts them into Instana specific spans and send them to the Instana Backend.
-However, customers who wish to adopt the OpenTelemetry Collector can replace the Instana Agent by their custom OpenTelemetry Collector, by including the Instana Exporter into the build.
+It converts OpenTelemetry log, metric and trace data to and then sends to the Instana Backend.
+
+## Exporter Configuration
+
+The following exporter configuration parameters are supported.
 
 
-## Configuration
-
-In order to use the Instana Exporter within your Collector, two steps must be followed:
-
-1. Add the ``instana`` entry under the ``exporters`` section in your configuration file.
-1. Add the ``instana`` entry as part of pipelines under the ``service/pipelines/traces`` entry.
-
-### Parameters
-
-The Instana Exporter requires three parameters in order to startup properly and be able to send spans to the Instana Backend:
-
- * ``agent_endpoint``: The Instana backend endpoint that the Exporter connects to. It depends on your region and it starts with ``https://serverless-``. It corresponds to the Instana environment variable ``INSTANA_ENDPOINT_URL``.
- * ``agent_key``: Your Instana Agent key. The same agent key can be used for host agents and serverless monitoring. It corresponds to the Instana environment variable ``INSTANA_AGENT_KEY``.
- * ``zone``: The zone to place this monitored component into. It corresponds to the Instana environment variable ``INSTANA_ZONE``.
+| Parameter      | Description |
+|----------------|-------------|
+| agent_endpoint | The Instana backend endpoint that the Exporter connects to. It depends on your region and it starts with ``https://serverless-``. It corresponds to the Instana environment variable ``INSTANA_ENDPOINT_URL`` |
+| agent_key      | Your Instana Agent key. The same agent key can be used for host agents and serverless monitoring. It corresponds to the Instana environment variable ``INSTANA_AGENT_KEY`` |
+| zone           | The zone to place this monitored component into. It corresponds to the Instana environment variable ``INSTANA_ZONE`` |
 
 > These parameters match the Instana Serverless Monitoring environment variables and can be found [here](https://www.ibm.com/docs/en/instana-observability/current?topic=references-environment-variables#serverless-monitoring).
 
