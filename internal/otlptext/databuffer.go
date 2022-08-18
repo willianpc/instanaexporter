@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -41,98 +40,6 @@ func (b *dataBuffer) logInstrumentationLibrary(il pcommon.InstrumentationScope) 
 		"InstrumentationLibrary %s %s",
 		il.Name(),
 		il.Version())
-}
-
-func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
-	b.logEntry("Descriptor:")
-	b.logEntry("     -> Name: %s", md.Name())
-	b.logEntry("     -> Description: %s", md.Description())
-	b.logEntry("     -> Unit: %s", md.Unit())
-	b.logEntry("     -> DataType: %s", md.DataType().String())
-}
-
-func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
-	switch m.DataType() {
-	case pmetric.MetricDataTypeNone:
-		return
-	case pmetric.MetricDataTypeGauge:
-		b.logNumberDataPoints(m.Gauge().DataPoints())
-	case pmetric.MetricDataTypeSum:
-		data := m.Sum()
-		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
-		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logNumberDataPoints(data.DataPoints())
-	case pmetric.MetricDataTypeHistogram:
-		data := m.Histogram()
-		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logDoubleHistogramDataPoints(data.DataPoints())
-	case pmetric.MetricDataTypeSummary:
-		data := m.Summary()
-		b.logDoubleSummaryDataPoints(data.DataPoints())
-	}
-}
-
-func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		b.logEntry("NumberDataPoints #%d", i)
-		b.logDataPointAttributes(p.Attributes())
-
-		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
-		b.logEntry("Timestamp: %s", p.Timestamp())
-		switch p.ValueType() {
-		case pmetric.NumberDataPointValueTypeInt:
-			b.logEntry("Value: %d", p.IntVal())
-		case pmetric.NumberDataPointValueTypeDouble:
-			b.logEntry("Value: %f", p.DoubleVal())
-		}
-	}
-}
-
-func (b *dataBuffer) logDoubleHistogramDataPoints(ps pmetric.HistogramDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointAttributes(p.Attributes())
-
-		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
-		b.logEntry("Timestamp: %s", p.Timestamp())
-		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
-
-		bounds := p.ExplicitBounds()
-		for i := 0; i < bounds.Len(); i++ {
-			b.logEntry("ExplicitBounds #%d: %f", i, bounds.At(i))
-		}
-
-		buckets := p.BucketCounts()
-		for j := 0; j < buckets.Len(); j++ {
-			b.logEntry("Buckets #%d, Count: %d", j, buckets.At(i))
-		}
-	}
-}
-
-func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		b.logEntry("SummaryDataPoints #%d", i)
-		b.logDataPointAttributes(p.Attributes())
-
-		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
-		b.logEntry("Timestamp: %s", p.Timestamp())
-		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
-
-		quantiles := p.QuantileValues()
-		for i := 0; i < quantiles.Len(); i++ {
-			quantile := quantiles.At(i)
-			b.logEntry("QuantileValue #%d: Quantile %f, Value %f", i, quantile.Quantile(), quantile.Value())
-		}
-	}
-}
-
-func (b *dataBuffer) logDataPointAttributes(labels pcommon.Map) {
-	b.logAttributeMap("Data point attributes", labels)
 }
 
 func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
