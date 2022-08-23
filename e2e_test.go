@@ -95,11 +95,11 @@ func generateAttrs() pcommon.Map {
 
 func validateInstanaSpanBasics(sp model.Span, t *testing.T) {
 	if sp.SpanID == "" {
-		t.Error("span id must not be empty")
+		t.Error("expected span id not to be empty")
 	}
 
 	if sp.TraceID == "" {
-		t.Error("trace id must not be empty")
+		t.Error("expected trace id not to be empty")
 	}
 
 	if sp.Name != "otel" {
@@ -115,7 +115,7 @@ func validateInstanaSpanBasics(sp model.Span, t *testing.T) {
 	}
 }
 
-func validateBundle(jsonData []byte, t *testing.T) {
+func validateBundle(jsonData []byte, t *testing.T, fn func(model.Span, *testing.T)) {
 	var bundle model.Bundle
 
 	err := json.Unmarshal(jsonData, &bundle)
@@ -130,7 +130,7 @@ func validateBundle(jsonData []byte, t *testing.T) {
 	}
 
 	for _, span := range bundle.Spans {
-		validateInstanaSpanBasics(span, t)
+		fn(span, t)
 	}
 }
 
@@ -139,19 +139,55 @@ func TestSpanBasics(t *testing.T) {
 
 	sp1 := spanSlice.AppendEmpty()
 
-	setupSpan(&sp1, SpanOptions{
-		// ParentId: generateSpanId(),
+	setupSpan(&sp1, SpanOptions{})
+
+	attrs := generateAttrs()
+	conv := converter.SpanConverter{}
+	bundle := conv.ConvertSpans(attrs, spanSlice)
+	data, _ := json.MarshalIndent(bundle, "", "  ")
+
+	validateBundle(data, t, func(sp model.Span, t *testing.T) {
+		validateInstanaSpanBasics(sp, t)
+	})
+}
+
+func TestSpanCorrelation(t *testing.T) {
+	spanSlice := ptrace.NewSpanSlice()
+
+	sp1 := spanSlice.AppendEmpty()
+	setupSpan(&sp1, SpanOptions{})
+
+	sp2 := spanSlice.AppendEmpty()
+	setupSpan(&sp2, SpanOptions{
+		ParentId: sp1.SpanID().Bytes(),
+	})
+
+	sp3 := spanSlice.AppendEmpty()
+	setupSpan(&sp3, SpanOptions{
+		ParentId: sp2.SpanID().Bytes(),
+	})
+
+	sp4 := spanSlice.AppendEmpty()
+	setupSpan(&sp4, SpanOptions{
+		ParentId: sp1.SpanID().Bytes(),
 	})
 
 	attrs := generateAttrs()
-
 	conv := converter.SpanConverter{}
-
 	bundle := conv.ConvertSpans(attrs, spanSlice)
-
 	data, _ := json.MarshalIndent(bundle, "", "  ")
 
-	validateBundle(data, t)
+	spanIdList := make(map[string]bool)
+
+	validateBundle(data, t, func(sp model.Span, t *testing.T) {
+		validateInstanaSpanBasics(sp, t)
+
+		spanIdList[sp.SpanID] = true
+
+		if sp.ParentID != "" && !spanIdList[sp.ParentID] {
+			t.Errorf("span %v expected to have parent id %v", sp.SpanID, sp.ParentID)
+		}
+	})
 }
 
 func generateTraceId() (data [16]byte) {
