@@ -134,6 +134,36 @@ func validateBundle(jsonData []byte, t *testing.T, fn func(model.Span, *testing.
 	}
 }
 
+func validateSpanError(sp model.Span, shouldHaveError bool, t *testing.T) {
+	if shouldHaveError {
+		if sp.Ec <= 0 {
+			t.Error("expected span to have errors (ec = 1)")
+		}
+
+		if sp.Data.Tags[model.INSTANA_DATA_ERROR] == "" {
+			t.Error("expected data.error to exist")
+		}
+
+		if sp.Data.Tags[model.INSTANA_DATA_ERROR_DETAIL] == "" {
+			t.Error("expected data.error_detail to exist")
+		}
+
+		return
+	}
+
+	if sp.Ec > 0 {
+		t.Error("expected span not to have errors (ec = 0)")
+	}
+
+	if sp.Data.Tags[model.INSTANA_DATA_ERROR] != "" {
+		t.Error("expected data.error to be empty")
+	}
+
+	if sp.Data.Tags[model.INSTANA_DATA_ERROR_DETAIL] != "" {
+		t.Error("expected data.error_detail to be empty")
+	}
+}
+
 func TestSpanBasics(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
@@ -208,36 +238,6 @@ func TestSpanWithError(t *testing.T) {
 		validateInstanaSpanBasics(sp, t)
 		validateSpanError(sp, true, t)
 	})
-}
-
-func validateSpanError(sp model.Span, shouldHaveError bool, t *testing.T) {
-	if shouldHaveError {
-		if sp.Ec <= 0 {
-			t.Error("expected span to have errors (ec = 1)")
-		}
-
-		if sp.Data.Tags[model.INSTANA_DATA_ERROR] == "" {
-			t.Error("expected data.error to exist")
-		}
-
-		if sp.Data.Tags[model.INSTANA_DATA_ERROR_DETAIL] == "" {
-			t.Error("expected data.error_detail to exist")
-		}
-
-		return
-	}
-
-	if sp.Ec > 0 {
-		t.Error("expected span not to have errors (ec = 0)")
-	}
-
-	if sp.Data.Tags[model.INSTANA_DATA_ERROR] != "" {
-		t.Error("expected data.error to be empty")
-	}
-
-	if sp.Data.Tags[model.INSTANA_DATA_ERROR_DETAIL] != "" {
-		t.Error("expected data.error_detail to be empty")
-	}
 }
 
 func generateTraceId() (data [16]byte) {
