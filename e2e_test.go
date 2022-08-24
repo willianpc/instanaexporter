@@ -148,6 +148,7 @@ func TestSpanBasics(t *testing.T) {
 
 	validateBundle(data, t, func(sp model.Span, t *testing.T) {
 		validateInstanaSpanBasics(sp, t)
+		validateSpanError(sp, false, t)
 	})
 }
 
@@ -181,6 +182,7 @@ func TestSpanCorrelation(t *testing.T) {
 
 	validateBundle(data, t, func(sp model.Span, t *testing.T) {
 		validateInstanaSpanBasics(sp, t)
+		validateSpanError(sp, false, t)
 
 		spanIdList[sp.SpanID] = true
 
@@ -188,6 +190,54 @@ func TestSpanCorrelation(t *testing.T) {
 			t.Errorf("span %v expected to have parent id %v", sp.SpanID, sp.ParentID)
 		}
 	})
+}
+func TestSpanWithError(t *testing.T) {
+	spanSlice := ptrace.NewSpanSlice()
+
+	sp1 := spanSlice.AppendEmpty()
+	setupSpan(&sp1, SpanOptions{
+		Error: "some error",
+	})
+
+	attrs := generateAttrs()
+	conv := converter.SpanConverter{}
+	bundle := conv.ConvertSpans(attrs, spanSlice)
+	data, _ := json.MarshalIndent(bundle, "", "  ")
+
+	validateBundle(data, t, func(sp model.Span, t *testing.T) {
+		validateInstanaSpanBasics(sp, t)
+		validateSpanError(sp, true, t)
+	})
+}
+
+func validateSpanError(sp model.Span, shouldHaveError bool, t *testing.T) {
+	if shouldHaveError {
+		if sp.Ec <= 0 {
+			t.Error("expected span to have errors (ec = 1)")
+		}
+
+		if sp.Data.Tags[model.INSTANA_DATA_ERROR] == "" {
+			t.Error("expected data.error to exist")
+		}
+
+		if sp.Data.Tags[model.INSTANA_DATA_ERROR_DETAIL] == "" {
+			t.Error("expected data.error_detail to exist")
+		}
+
+		return
+	}
+
+	if sp.Ec > 0 {
+		t.Error("expected span not to have errors (ec = 0)")
+	}
+
+	if sp.Data.Tags[model.INSTANA_DATA_ERROR] != "" {
+		t.Error("expected data.error to be empty")
+	}
+
+	if sp.Data.Tags[model.INSTANA_DATA_ERROR_DETAIL] != "" {
+		t.Error("expected data.error_detail to be empty")
+	}
 }
 
 func generateTraceId() (data [16]byte) {
